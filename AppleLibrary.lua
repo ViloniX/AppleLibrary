@@ -2,25 +2,12 @@ local AppleLib = {
     Open = true,
     Bind = Enum.KeyCode.RightShift,
     Themes = {
-        Dark = {
-            Main = Color3.fromRGB(28, 28, 30),
-            Sidebar = Color3.fromRGB(35, 35, 37),
-            Element = Color3.fromRGB(45, 45, 47),
-            Text = Color3.fromRGB(255, 255, 255),
-            Accent = Color3.fromRGB(0, 122, 255)
-        },
-        Light = {
-            Main = Color3.fromRGB(242, 242, 247),
-            Sidebar = Color3.fromRGB(255, 255, 255),
-            Element = Color3.fromRGB(229, 229, 234),
-            Text = Color3.fromRGB(0, 0, 0),
-            Accent = Color3.fromRGB(0, 122, 255)
-        },
         Midnight = {
-            Main = Color3.fromRGB(10, 10, 12),
-            Sidebar = Color3.fromRGB(15, 15, 17),
+            Main = Color3.fromRGB(12, 12, 14),
+            Sidebar = Color3.fromRGB(18, 18, 20),
             Element = Color3.fromRGB(25, 25, 27),
-            Text = Color3.fromRGB(255, 255, 255),
+            ElementActive = Color3.fromRGB(35, 35, 37),
+            Text = Color3.fromRGB(240, 240, 240),
             Accent = Color3.fromRGB(160, 32, 240)
         }
     }
@@ -35,51 +22,63 @@ local function PackTween(obj, time, goal)
     TweenService:Create(obj, info, goal):Play()
 end
 
-function AppleLib:SetBind(key)
-    self.Bind = key
-end
+function AppleLib:CreateWindow(title, version, user)
+    local theme = self.Themes.Midnight
+    local ScreenGui = Instance.new("ScreenGui")
+    pcall(function() ScreenGui.Parent = game.CoreGui end)
+    if not ScreenGui.Parent then ScreenGui.Parent = game.Players.LocalPlayer:FindFirstChild("PlayerGui") end
+    ScreenGui.Name = "AppleUI_" .. math.random(100,999)
+    ScreenGui.ResetOnSpawn = false
 
-function AppleLib:CreateWindow(title, version, user, themeName)
-    local theme = self.Themes[themeName] or self.Themes.Dark
-    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-    
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 580, 0, 400)
     Main.Position = UDim2.new(0.5, -290, 0.5, -200)
     Main.BackgroundColor3 = theme.Main
     Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-    Instance.new("UIStroke", Main).Color = theme.Element
+    Instance.new("UIStroke", Main).Color = Color3.fromRGB(50, 50, 50)
 
-    -- Управление Keybind
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == self.Bind then
-            self.Open = not self.Open
-            Main.Visible = self.Open
-        end
-    end)
+    -- Topbar (macos circles)
+    local Controls = Instance.new("Frame", Main)
+    Controls.Size = UDim2.new(0, 60, 0, 40)
+    Controls.Position = UDim2.new(0, 15, 0, 0)
+    Controls.BackgroundTransparency = 1
+    local CL = Instance.new("UIListLayout", Controls)
+    CL.FillDirection = Enum.FillDirection.Horizontal
+    CL.Padding = UDim.new(0, 8)
+    CL.VerticalAlignment = Enum.VerticalAlignment.Center
 
-    -- Sidebar
+    for _, color in pairs({Color3.fromRGB(255, 69, 58), Color3.fromRGB(255, 186, 10), Color3.fromRGB(50, 215, 75)}) do
+        local d = Instance.new("Frame", Controls)
+        d.Size = UDim2.new(0, 10, 0, 10)
+        d.BackgroundColor3 = color
+        Instance.new("UICorner", d).CornerRadius = UDim.new(1, 0)
+    end
+
     local Sidebar = Instance.new("Frame", Main)
-    Sidebar.Size = UDim2.new(0, 170, 1, 0)
+    Sidebar.Size = UDim2.new(0, 170, 1, -40)
+    Sidebar.Position = UDim2.new(0, 0, 0, 40)
     Sidebar.BackgroundColor3 = theme.Sidebar
     Sidebar.BorderSizePixel = 0
     
     local TabContainer = Instance.new("ScrollingFrame", Sidebar)
-    TabContainer.Size = UDim2.new(1, 0, 1, -60)
-    TabContainer.Position = UDim2.new(0, 0, 0, 50)
+    TabContainer.Size = UDim2.new(1, 0, 1, -10)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ScrollBarThickness = 0
     Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 5)
 
-    -- Pages
     local Pages = Instance.new("Frame", Main)
     Pages.Size = UDim2.new(1, -190, 1, -60)
     Pages.Position = UDim2.new(0, 180, 0, 50)
     Pages.BackgroundTransparency = 1
 
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == self.Bind then
+            Main.Visible = not Main.Visible
+        end
+    end)
+
     local Tabs = {}
-    
     function Tabs:CreateTab(name)
         local TabBtn = Instance.new("TextButton", TabContainer)
         TabBtn.Size = UDim2.new(0.9, 0, 0, 32)
@@ -110,7 +109,6 @@ function AppleLib:CreateWindow(title, version, user, themeName)
 
         local Elements = {}
 
-        -- BUTTON
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
             Btn.Size = UDim2.new(0.97, 0, 0, 36)
@@ -121,14 +119,10 @@ function AppleLib:CreateWindow(title, version, user, themeName)
             Btn.TextSize = 13
             Btn.TextXAlignment = Enum.TextXAlignment.Left
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
-            
             Btn.MouseButton1Click:Connect(callback)
-            return {
-                SetText = function(_, newText) Btn.Text = "  " .. newText end
-            }
+            return { SetText = function(_, t) Btn.Text = "  " .. t end }
         end
 
-        -- TOGGLE (с функцией Set)
         function Elements:CreateToggle(text, def, callback)
             local state = def or false
             local Tgl = Instance.new("TextButton", Page)
@@ -140,88 +134,84 @@ function AppleLib:CreateWindow(title, version, user, themeName)
             Tgl.TextXAlignment = Enum.TextXAlignment.Left
             Instance.new("UICorner", Tgl).CornerRadius = UDim.new(0, 8)
 
-            local Switch = Instance.new("Frame", Tgl)
-            Switch.Size = UDim2.new(0, 34, 0, 18)
-            Switch.Position = UDim2.new(1, -40, 0.5, -9)
-            Switch.BackgroundColor3 = state and theme.Accent or Color3.fromRGB(100, 100, 100)
-            Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
+            local Sw = Instance.new("Frame", Tgl)
+            Sw.Size = UDim2.new(0, 34, 0, 18)
+            Sw.Position = UDim2.new(1, -40, 0.5, -9)
+            Sw.BackgroundColor3 = state and theme.Accent or Color3.fromRGB(100, 100, 100)
+            Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
 
-            local function update()
-                PackTween(Switch, 0.2, {BackgroundColor3 = state and theme.Accent or Color3.fromRGB(100, 100, 100)})
+            local function up()
+                PackTween(Sw, 0.2, {BackgroundColor3 = state and theme.Accent or Color3.fromRGB(100, 100, 100)})
                 callback(state)
             end
-
-            Tgl.MouseButton1Click:Connect(function()
-                state = not state
-                update()
-            end)
-
-            return {
-                Set = function(_, val) state = val update() end
-            }
+            Tgl.MouseButton1Click:Connect(function() state = not state up() end)
+            return { Set = function(_, v) state = v up() end }
         end
 
-        -- SLIDER (с функцией Set)
         function Elements:CreateSlider(text, min, max, def, callback)
-            local SliderFrame = Instance.new("Frame", Page)
-            SliderFrame.Size = UDim2.new(0.97, 0, 0, 45)
-            SliderFrame.BackgroundColor3 = theme.Element
-            Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
+            local SFrame = Instance.new("Frame", Page)
+            SFrame.Size = UDim2.new(0.97, 0, 0, 45)
+            SFrame.BackgroundColor3 = theme.Element
+            Instance.new("UICorner", SFrame).CornerRadius = UDim.new(0, 8)
 
-            local ValLabel = Instance.new("TextLabel", SliderFrame)
-            ValLabel.Size = UDim2.new(1, -10, 0, 25)
-            ValLabel.Text = tostring(def)
-            ValLabel.TextColor3 = theme.Accent
-            ValLabel.TextXAlignment = Enum.TextXAlignment.Right
-            ValLabel.BackgroundTransparency = 1
+            local Label = Instance.new("TextLabel", SFrame)
+            Label.Text = "  " .. text
+            Label.Size = UDim2.new(1, 0, 0, 20)
+            Label.TextColor3 = theme.Text
+            Label.BackgroundTransparency = 1
+            Label.Font = Enum.Font.Gotham
+            Label.TextXAlignment = Enum.TextXAlignment.Left
 
-            local Bar = Instance.new("TextButton", SliderFrame)
+            local Val = Instance.new("TextLabel", SFrame)
+            Val.Size = UDim2.new(1, -10, 0, 20)
+            Val.Text = tostring(def)
+            Val.TextColor3 = theme.Accent
+            Val.BackgroundTransparency = 1
+            Val.TextXAlignment = Enum.TextXAlignment.Right
+
+            local Bar = Instance.new("TextButton", SFrame)
             Bar.Size = UDim2.new(0.9, 0, 0, 4)
             Bar.Position = UDim2.new(0.05, 0, 0.7, 0)
-            Bar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+            Bar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             Bar.Text = ""
 
             local Fill = Instance.new("Frame", Bar)
             Fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0)
             Fill.BackgroundColor3 = theme.Accent
 
-            local function setVal(v)
-                local pct = math.clamp((v - min) / (max - min), 0, 1)
+            local function update()
+                local pct = math.clamp((Mouse.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+                local v = math.floor(min + (max-min) * pct)
                 Fill.Size = UDim2.new(pct, 0, 1, 0)
-                ValLabel.Text = tostring(v)
+                Val.Text = tostring(v)
                 callback(v)
             end
-
             Bar.InputBegan:Connect(function(i)
                 if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local moveConn
-                    moveConn = Mouse.Move:Connect(function()
-                        local pct = math.clamp((Mouse.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-                        local val = math.floor(min + (max-min) * pct)
-                        setVal(val)
-                    end)
+                    local move; move = Mouse.Move:Connect(update)
                     UserInputService.InputEnded:Connect(function(i2)
-                        if i2.UserInputType == Enum.UserInputType.MouseButton1 then moveConn:Disconnect() end
+                        if i2.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() end
                     end)
+                    update()
                 end
             end)
-
-            return { Set = function(_, v) setVal(v) end }
+            return { Set = function(_, v) 
+                local p = math.clamp((v - min) / (max - min), 0, 1)
+                Fill.Size = UDim2.new(p, 0, 1, 0)
+                Val.Text = tostring(v)
+                callback(v)
+            end }
         end
-
         return Elements
     end
 
-    -- Драггинг
-    local d, di, ds, sp
+    -- Dragging
+    local d, ds, sp
     Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true ds = i.Position sp = Main.Position end end)
-    Main.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement then di = i end end)
-    UserInputService.InputChanged:Connect(function(i)
-        if i == di and d then
-            local del = i.Position - ds
-            Main.Position = UDim2.new(sp.X.Scale, sp.X.Offset + del.X, sp.Y.Scale, sp.Y.Offset + del.Y)
-        end
-    end)
+    UserInputService.InputChanged:Connect(function(i) if d and i.UserInputType == Enum.UserInputType.MouseMovement then
+        local del = i.Position - ds
+        Main.Position = UDim2.new(sp.X.Scale, sp.X.Offset + del.X, sp.Y.Scale, sp.Y.Offset + del.Y)
+    end end)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = false end end)
 
     return Tabs
